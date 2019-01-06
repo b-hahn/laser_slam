@@ -10,7 +10,7 @@
 
 namespace laser_slam_ros {
 
-typedef pcl::PointXYZ PclPoint;
+typedef pcl::PointXYZRGB PclPoint;
 typedef pcl::PointCloud<PclPoint> PointCloud;
 typedef PointCloud::Ptr PointCloudPtr;
 typedef pcl::PointXYZI PointI;

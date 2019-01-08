@@ -165,6 +165,26 @@ static PointCloud lpmToPcl(const laser_slam::PointMatcher::DataPoints& cloud_in)
     point.x = cloud_in.features(0,i);
     point.y = cloud_in.features(1,i);
     point.z = cloud_in.features(2,i);
+    // TODO(ben): add RGB info here
+    if (cloud_in.descriptorExists("color")) {
+      assert(cloud_in.descriptors(0,i) * 255 < 256);
+      uint8_t r = cloud_in.descriptors(0,i) * 255;
+      uint8_t g = cloud_in.descriptors(1,i) * 255;
+      uint8_t b = cloud_in.descriptors(2, i) * 255;
+      // point.r = cloud_in.descriptors(0,i) * 255;
+      // point.g = cloud_in.descriptors(1,i) * 255;
+      // point.b = cloud_in.descriptors(2, i) * 255;
+      // point.a = 255;
+      uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+      point.rgb = *reinterpret_cast<float*>(&rgb);
+      // point.rgb = static_cast<float>((point.r << 16) | (point.g << 8) | point.b);  //TODO(ben): RGB or BGR?
+      //TODO(ben): set point.rgb instead?
+      // std::cout << "Point colors in lpmToPcl: " << std::to_string(point.r) << "("
+      //           << std::to_string(cloud_in.descriptors(0, i)) << ")," << std::to_string(point.g)
+      //           << "," << std::to_string(point.b) << std::endl;
+    } else {
+        std::cout << "No color descriptors present in laser_slam!" << std::endl;
+    }
     cloud_out.push_back(point);
   }
   return cloud_out;
@@ -185,6 +205,35 @@ static void convert_to_point_cloud_2_msg(const PointCloudT& cloud,
   // Convert to PCLPointCloud2.
   pcl::PCLPointCloud2 pcl_point_cloud_2;
   pcl::toPCLPointCloud2(cloud, pcl_point_cloud_2);
+  
+  std::string red = "\033[0;31m";
+  std::string reset = "\033[0m";
+  std::cout << "sizeof(decltype(cloud.points[0])): " << sizeof(decltype(cloud.points[0])) << std::endl;
+  std::cout << "Showing memcpy contents of PointCloud<PclPoint> (len: " << cloud.size() << "):" << std::endl;
+  if (cloud.size() > 0) {
+      std::cout << "cloud.points[0].rgb: " << cloud.points[0].rgb
+                << " AND SIZEOF: " << std::to_string(sizeof(cloud.points[0].rgb)) << std::endl;
+      // std::cout << "cloud.points[0].r and g an b: " << std::to_string(cloud.points[0].r) << ", "
+      //           << std::to_string(cloud.points[0].g) << "," << std::to_string(cloud.points[0].b)
+      //           << " AND SIZEOF: " << std::to_string(sizeof(cloud.points[0].rgb)) << std::endl;
+      uint8_t cloud_data[sizeof(cloud.points[0])];
+      memcpy(cloud_data, &cloud.points[0], sizeof(cloud.points[0]));
+      for (int i = 0; i < sizeof(cloud.points[0]); ++i) {
+          std::cout << std::to_string(cloud_data[i]) << ", ";
+      }
+      std::cout << std::endl;
+  }
+  std::cout << "pcl_point_cloud_2:\n";
+  for (int i = 0; (i < 96) & (i < pcl_point_cloud_2.data.size()); ++i) {
+    if (i % 48 == 16) { 
+      std::cout << red;
+    } 
+    else if (i % 48 == 32) {
+      std::cout << reset;
+    }
+    std::cout << std::to_string(pcl_point_cloud_2.data[i]) << ", ";
+  }
+  std::cout << std::endl;
   // Convert to sensor_msgs::PointCloud2.
   pcl_conversions::fromPCL(pcl_point_cloud_2, *converted);
   // Apply frame to msg.

@@ -3,6 +3,9 @@
 #include <laser_slam_ros/GetLaserTrackSrv.h>
 #include <octomap_world/octomap_manager.h>
 #include <ros/ros.h>
+#include <pcl/point_types.h>
+#include <pcl_ros/transforms.h>
+
 
 int main(int argc, char** argv) {
   // Initialize glog for volumetric_mapping.

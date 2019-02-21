@@ -12,6 +12,7 @@ find_package(catkin_simple 0.1.0 REQUIRED COMPONENTS
     tf
     rosbag
     visualization_msgs
+    segmatch
 )
 
 catkin_simple(ALL_DEPS_REQUIRED)

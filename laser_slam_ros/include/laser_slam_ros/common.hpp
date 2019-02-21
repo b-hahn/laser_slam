@@ -8,9 +8,12 @@
 #include <pcl/point_types.h>
 #include <ros/ros.h>
 
+#include <segmatch/point_color_semantics.hpp>
+
 namespace laser_slam_ros {
 
-typedef pcl::PointXYZRGB PclPoint;
+// typedef pcl::PointXYZRGB PclPoint;
+typedef segmatch::PointColorSemantics PclPoint;
 typedef pcl::PointCloud<PclPoint> PointCloud;
 typedef PointCloud::Ptr PointCloudPtr;
 typedef pcl::PointXYZI PointI;

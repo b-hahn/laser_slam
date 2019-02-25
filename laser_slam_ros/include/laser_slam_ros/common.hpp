@@ -171,22 +171,35 @@ static PointCloud lpmToPcl(const laser_slam::PointMatcher::DataPoints& cloud_in)
     // TODO(ben): add RGB info here
     if (cloud_in.descriptorExists("color")) {
       assert(cloud_in.descriptors(0,i) * 255 < 256);
-      uint8_t r = cloud_in.descriptors(0,i) * 255;
-      uint8_t g = cloud_in.descriptors(1,i) * 255;
-      uint8_t b = cloud_in.descriptors(2, i) * 255;
-      // point.r = cloud_in.descriptors(0,i) * 255;
-      // point.g = cloud_in.descriptors(1,i) * 255;
-      // point.b = cloud_in.descriptors(2, i) * 255;
-      // point.a = 255;
+      uint8_t color_starting_row = cloud_in.getDescriptorStartingRow("color");
+      uint8_t r = cloud_in.descriptors(color_starting_row, i) * 255;
+      uint8_t g = cloud_in.descriptors(color_starting_row + 1, i) * 255;
+      uint8_t b = cloud_in.descriptors(color_starting_row + 2, i) * 255;
+
       uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
       point.rgb = *reinterpret_cast<float*>(&rgb);
-      // point.rgb = static_cast<float>((point.r << 16) | (point.g << 8) | point.b);  //TODO(ben): RGB or BGR?
-      //TODO(ben): set point.rgb instead?
-      // std::cout << "Point colors in lpmToPcl: " << std::to_string(point.r) << "("
-      //           << std::to_string(cloud_in.descriptors(0, i)) << ")," << std::to_string(point.g)
-      //           << "," << std::to_string(point.b) << std::endl;
+      std::cout << "r: " << std::to_string(r) << " g: " << std::to_string(g) << " b: " << std::to_string(b) << std::endl;
     } else {
         std::cout << "No color descriptors present in laser_slam!" << std::endl;
+    }
+    // std::cout << "Descriptor labels: " << std::endl;
+    // uint8_t counter = 0;
+    // for (auto& d : cloud_in.descriptorLabels) {
+    //   std::cout << d.text << " with dim = " << d.span << " and starting_row = " << cloud_in.getDescriptorStartingRow(d.text) <<  " and content:\n";
+    //   for (int j = 0; j < d.span; ++j) {
+    //     std::cout << "\t\t" << cloud_in.descriptors(cloud_in.getDescriptorStartingRow(d.text) + j, i) * 255 << std::endl;
+    //     counter++;
+    //   }
+    // }
+    if (cloud_in.descriptorExists("semantics_rgb")) {
+      assert(cloud_in.descriptors(0,i) * 255 < 256);
+      uint32_t semantics_rgb = cloud_in.descriptors(cloud_in.getDescriptorStartingRow("semantics_rgb"), i);
+
+      // std::cout << "dim: " << cloud_in.getDescriptorDimension("semantics_rgb") << " and semantics_rgb: " << std::to_string(semantics_rgb) << std::endl;
+      point.semantics_rgb = semantics_rgb;
+
+    } else {
+        std::cout << "No semantics descriptors present in laser_slam!" << std::endl;
     }
     cloud_out.push_back(point);
   }
@@ -208,7 +221,7 @@ static void convert_to_point_cloud_2_msg(const PointCloudT& cloud,
   // Convert to PCLPointCloud2.
   pcl::PCLPointCloud2 pcl_point_cloud_2;
   pcl::toPCLPointCloud2(cloud, pcl_point_cloud_2);
-  
+
   std::string red = "\033[0;31m";
   std::string reset = "\033[0m";
   std::cout << "sizeof(decltype(cloud.points[0])): " << sizeof(decltype(cloud.points[0])) << std::endl;
@@ -228,9 +241,9 @@ static void convert_to_point_cloud_2_msg(const PointCloudT& cloud,
   }
   std::cout << "pcl_point_cloud_2:\n";
   for (int i = 0; (i < 96) & (i < pcl_point_cloud_2.data.size()); ++i) {
-    if (i % 48 == 16) { 
+    if (i % 48 == 16) {
       std::cout << red;
-    } 
+    }
     else if (i % 48 == 32) {
       std::cout << reset;
     }

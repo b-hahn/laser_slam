@@ -123,6 +123,10 @@ void LaserSlamWorker::scanCallback(const sensor_msgs::PointCloud2& cloud_msg_in)
         // Convert input cloud to laser scan.
         LaserScan new_scan;
         new_scan.scan = PointMatcher_ros::rosMsgToPointMatcherCloud<float>(cloud_msg_in);
+        int starting_row = new_scan.scan.getDescriptorStartingRow("semantics_rgb");
+        int rgb = new_scan.scan.descriptors(starting_row, 0);
+        std::cout << new_scan.scan.descriptors(starting_row, 0) << " aka " << ((rgb >> 16) & 0xff)
+                  << ((rgb >> 8) & 0xff) << (rgb & 0xff) << std::endl;
         new_scan.time_ns = rosTimeToCurveTime(cloud_msg_in.header.stamp.toNSec());
 
         // Process the new scan and get new values and factors.

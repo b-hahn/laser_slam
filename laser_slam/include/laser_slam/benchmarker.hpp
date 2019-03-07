@@ -136,6 +136,12 @@ class Benchmarker {
     // Computes the mean of the measurements.
     double getMean() const;
 
+    // Computes the mean of the measurements.
+    double getMin() const;
+
+    // Computes the mean of the measurements.
+    double getMax() const;
+
     // Computes the standard deviation of the values.
     double getStandardDeviation() const;
 

@@ -146,7 +146,8 @@ void Benchmarker::logStatistics(std::ostream& stream) {
   for (const auto& topic : value_topics_) {
     stream << " " << ALIGN_MODIFIERS << (topic.first + ": ")
                   << FLOAT_MODIFIERS << topic.second.getMean() << " ("
-                  << FLOAT_MODIFIERS << topic.second.getStandardDeviation() << ")" << std::endl;
+                  << FLOAT_MODIFIERS << topic.second.getStandardDeviation() << ")"
+                  << FLOAT_MODIFIERS << " and min: " << topic.second.getMin() << " max: " << topic.second.getMax() << std::endl;
   }
   stream << "" << std::endl;
 }
@@ -197,6 +198,26 @@ void Benchmarker::ValueTopic::addValue(const size_t step_id, const TimePoint tim
 
 double Benchmarker::ValueTopic::getMean() const {
   return sum_ / static_cast<double>(values_count_);
+}
+
+double Benchmarker::ValueTopic::getMin() const {
+  double min = std::numeric_limits<double>::max();
+  for (auto& v : values_) {
+    if (v.value < min) {
+      min = v.value;
+    }
+  }
+  return min;
+}
+
+double Benchmarker::ValueTopic::getMax() const {
+  double max = std::numeric_limits<double>::min();
+  for (auto& v : values_) {
+    if (v.value > max) {
+      max = v.value;
+    }
+  }
+  return max;
 }
 
 double Benchmarker::ValueTopic::getStandardDeviation() const {

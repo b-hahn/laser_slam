@@ -31,9 +31,13 @@ namespace laser_slam_ros {
 
 using namespace laser_slam;
 
-LaserSlamWorker::LaserSlamWorker() { }
+LaserSlamWorker::LaserSlamWorker(){
+    scan_cb_counter = 0;
+    }
 
-LaserSlamWorker::~LaserSlamWorker() { }
+LaserSlamWorker::~LaserSlamWorker()
+{
+}
 
 void LaserSlamWorker::init(
     ros::NodeHandle& nh, const LaserSlamWorkerParams& params,
@@ -96,17 +100,21 @@ void LaserSlamWorker::init(
 void LaserSlamWorker::scanCallback(const sensor_msgs::PointCloud2& cloud_msg_in) {
   std::lock_guard<std::recursive_mutex> lock_scan_callback(scan_callback_mutex_);
   if (!lock_scan_callback_) {
+
     if (tf_listener_.waitForTransform(params_.odom_frame, params_.sensor_frame,
                                       cloud_msg_in.header.stamp, ros::Duration(kTimeout_s))) {
-      // Get the tf transform.
-      tf::StampedTransform tf_transform;
-      tf_listener_.lookupTransform(params_.odom_frame, params_.sensor_frame,
-                                   cloud_msg_in.header.stamp, tf_transform);
+    scan_cb_counter++;
+    // LOG(INFO) << "scan_cb_counter = " << scan_cb_counter << "cloud_msg_in.header.stamp: " << cloud_msg_in.header.stamp;
+    // Get the tf transform.
+    tf::StampedTransform tf_transform;
+    tf_listener_.lookupTransform(params_.odom_frame, params_.sensor_frame,
+                                 cloud_msg_in.header.stamp, tf_transform);
 
-      bool process_scan = false;
-      SE3 current_pose;
+    bool process_scan = false;
+    SE3 current_pose;
 
-      if (!last_pose_set_) {
+    if (!last_pose_set_)
+    {
         process_scan = true;
         last_pose_set_ = true;
         last_pose_ = tfTransformToPose(tf_transform).T_w;
@@ -123,11 +131,12 @@ void LaserSlamWorker::scanCallback(const sensor_msgs::PointCloud2& cloud_msg_in)
         // Convert input cloud to laser scan.
         LaserScan new_scan;
         new_scan.scan = PointMatcher_ros::rosMsgToPointMatcherCloud<float>(cloud_msg_in);
-        int starting_row = new_scan.scan.getDescriptorStartingRow("semantics_rgb");
-        int rgb = new_scan.scan.descriptors(starting_row, 0);
-        std::cout << new_scan.scan.descriptors(starting_row, 0) << " aka " << ((rgb >> 16) & 0xff)
-                  << ((rgb >> 8) & 0xff) << (rgb & 0xff) << std::endl;
+        // int starting_row = new_scan.scan.getDescriptorStartingRow("semantics_rgb");
+        // int rgb = new_scan.scan.descriptors(starting_row, 0);
+        // std::cout << new_scan.scan.descriptors(starting_row, 0) << " aka " << ((rgb >> 16) & 0xff)
+        //           << ((rgb >> 8) & 0xff) << (rgb & 0xff) << std::endl;
         new_scan.time_ns = rosTimeToCurveTime(cloud_msg_in.header.stamp.toNSec());
+        // LOG(INFO) << "time_ns in scanCallback = " << new_scan.time_ns << " which should be indentical to KITTI rosbag time (assuming DSO passes on the timestamps correctly)";
 
         // Process the new scan and get new values and factors.
         gtsam::NonlinearFactorGraph new_factors;
@@ -164,7 +173,6 @@ void LaserSlamWorker::scanCallback(const sensor_msgs::PointCloud2& cloud_msg_in)
 
           last_pose_sent_to_laser_track_ = new_pose;
         }
-
         // Process the new values and factors.
         gtsam::Values result;
         if (is_prior) {
@@ -286,18 +294,18 @@ bool LaserSlamWorker::getLaserTracksServiceCall(
           params_.sensor_frame,
           scan_stamp);
       tf::transformStampedTFToMsg(tf_transform, ros_transform);
-      
+
       data.push_back(std::make_tuple(scan.time_ns, pc, ros_transform));
     }
   }
-  
+
   std::sort(data.begin(),data.end(),
        [](const std::tuple<laser_slam::Time, sensor_msgs::PointCloud2, geometry_msgs::TransformStamped>& a,
        const std::tuple<laser_slam::Time, sensor_msgs::PointCloud2, geometry_msgs::TransformStamped>& b) -> bool
        {
          return std::get<0>(a) <= std::get<0>(b);
        });
-  
+
   bool zero_added = false;
   // Fill response.
   for (const auto& elem : data) {
@@ -305,14 +313,14 @@ bool LaserSlamWorker::getLaserTracksServiceCall(
     sensor_msgs::PointCloud2 pc;
     geometry_msgs::TransformStamped tf;
     std::tie(time, pc, tf) = elem;
-    LOG(INFO) << "Time " << time;
+    // LOG(INFO) << "Time " << time;
     if (time == 0u) {
       if (!zero_added) {
 	zero_added = true;
       } else {
 	continue;
       }
-    } 
+    }
     response.laser_scans.push_back(pc);
     response.transforms.push_back(tf);
   }

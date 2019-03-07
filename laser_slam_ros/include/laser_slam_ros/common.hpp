@@ -178,19 +178,11 @@ static PointCloud lpmToPcl(const laser_slam::PointMatcher::DataPoints& cloud_in)
 
       uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
       point.rgb = *reinterpret_cast<float*>(&rgb);
-      std::cout << "r: " << std::to_string(r) << " g: " << std::to_string(g) << " b: " << std::to_string(b) << std::endl;
+      // std::cout << "r: " << std::to_string(r) << " g: " << std::to_string(g) << " b: " << std::to_string(b) << std::endl;
     } else {
         std::cout << "No color descriptors present in laser_slam!" << std::endl;
     }
-    // std::cout << "Descriptor labels: " << std::endl;
-    // uint8_t counter = 0;
-    // for (auto& d : cloud_in.descriptorLabels) {
-    //   std::cout << d.text << " with dim = " << d.span << " and starting_row = " << cloud_in.getDescriptorStartingRow(d.text) <<  " and content:\n";
-    //   for (int j = 0; j < d.span; ++j) {
-    //     std::cout << "\t\t" << cloud_in.descriptors(cloud_in.getDescriptorStartingRow(d.text) + j, i) * 255 << std::endl;
-    //     counter++;
-    //   }
-    // }
+
     if (cloud_in.descriptorExists("semantics_rgb")) {
       assert(cloud_in.descriptors(0,i) * 255 < 256);
       uint32_t semantics_rgb = cloud_in.descriptors(cloud_in.getDescriptorStartingRow("semantics_rgb"), i);
@@ -222,34 +214,13 @@ static void convert_to_point_cloud_2_msg(const PointCloudT& cloud,
   pcl::PCLPointCloud2 pcl_point_cloud_2;
   pcl::toPCLPointCloud2(cloud, pcl_point_cloud_2);
 
-  std::string red = "\033[0;31m";
-  std::string reset = "\033[0m";
-  std::cout << "sizeof(decltype(cloud.points[0])): " << sizeof(decltype(cloud.points[0])) << std::endl;
-  std::cout << "Showing memcpy contents of PointCloud<PclPoint> (len: " << cloud.size() << "):" << std::endl;
+  // std::string red = "\033[0;31m";
+  // std::string reset = "\033[0m";
+  // std::cout << "Showing memcpy contents of PointCloud<PclPoint> (len: " << cloud.size() << "):" << std::endl;
   if (cloud.size() > 0) {
-      std::cout << "cloud.points[0].rgb: " << cloud.points[0].rgb
-                << " AND SIZEOF: " << std::to_string(sizeof(cloud.points[0].rgb)) << std::endl;
-      // std::cout << "cloud.points[0].r and g an b: " << std::to_string(cloud.points[0].r) << ", "
-      //           << std::to_string(cloud.points[0].g) << "," << std::to_string(cloud.points[0].b)
-      //           << " AND SIZEOF: " << std::to_string(sizeof(cloud.points[0].rgb)) << std::endl;
       uint8_t cloud_data[sizeof(cloud.points[0])];
       memcpy(cloud_data, &cloud.points[0], sizeof(cloud.points[0]));
-      for (int i = 0; i < sizeof(cloud.points[0]); ++i) {
-          std::cout << std::to_string(cloud_data[i]) << ", ";
-      }
-      std::cout << std::endl;
   }
-  std::cout << "pcl_point_cloud_2:\n";
-  for (int i = 0; (i < 96) & (i < pcl_point_cloud_2.data.size()); ++i) {
-    if (i % 48 == 16) {
-      std::cout << red;
-    }
-    else if (i % 48 == 32) {
-      std::cout << reset;
-    }
-    std::cout << std::to_string(pcl_point_cloud_2.data[i]) << ", ";
-  }
-  std::cout << std::endl;
   // Convert to sensor_msgs::PointCloud2.
   pcl_conversions::fromPCL(pcl_point_cloud_2, *converted);
   // Apply frame to msg.

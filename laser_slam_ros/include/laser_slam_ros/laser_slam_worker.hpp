@@ -75,6 +75,11 @@ class LaserSlamWorker {
 
   bool exportTrajectoryServiceCall(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  int64_t returnBaseTimeNs() {
+    return base_time_ns_;
+  }
+
+  int scan_cb_counter;
  private:
   // Convert a tf::StampedTransform to a laser_slam::Pose.
   laser_slam::Pose tfTransformToPose(const tf::StampedTransform& tf_transform);
@@ -163,6 +168,7 @@ class LaserSlamWorker {
   static constexpr double kTimeout_s = 0.2;
   static constexpr unsigned int kScanSubscriberMessageQueueSize = 1u;
   static constexpr unsigned int kPublisherQueueSize = 50u;
+
 }; // LaserSlamWorker
 
 } // namespace laser_slam_ros

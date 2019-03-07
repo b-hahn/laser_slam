@@ -141,7 +141,6 @@ void LaserTrack::processPoseAndLaserScan(const Pose& pose, const LaserScan& in_s
   }
 
   LaserScan scan = in_scan;
-
   // Apply the input filters.
   input_filters_.apply(scan.scan);
 
@@ -530,7 +529,7 @@ Pose* LaserTrack::findPose(const Time& timestamp_ns) {
     --it;
   } while (it != pose_measurements_.begin() && it->time_ns != timestamp_ns);
 
-  CHECK_EQ(it->time_ns, timestamp_ns) 
+  CHECK_EQ(it->time_ns, timestamp_ns)
   << "The requested time does not exist in the pose measurements.";
 
   return &(*it);

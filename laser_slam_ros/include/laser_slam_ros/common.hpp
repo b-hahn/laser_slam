@@ -6,6 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
 #include <ros/ros.h>
 
 #include <segmatch/point_color_semantics.hpp>
@@ -198,11 +199,64 @@ static PointCloud lpmToPcl(const laser_slam::PointMatcher::DataPoints& cloud_in)
   return cloud_out;
 }
 
+template<typename PointCloudT>
 static void convert_to_pcl_point_cloud(const sensor_msgs::PointCloud2& cloud_message,
-                                       PointICloud* converted) {
+                                       PointCloudT* converted) {
+
+  // pcl::PCDWriter w;
+  // w.write ("tempddd.pcd", cloud_message, Eigen::Vector4f::Zero (), Eigen::Quaternionf::Identity (), false);
+  // w.writeASCII("tempddd.pcd", cloud_message);
+  pcl::io::savePCDFile ("intermediate.pcd", cloud_message, Eigen::Vector4f::Zero (), Eigen::Quaternionf::Identity (), false);
+
   pcl::PCLPointCloud2 pcl_point_cloud_2;
+  std::cout << "1\n";
+  pcl_conversions::toPCL(cloud_message.header, pcl_point_cloud_2.header);
+  std::cout << "2\n";
+  pcl_conversions::toPCL(cloud_message.fields, pcl_point_cloud_2.fields);
+  std::cout << "3\n";
   pcl_conversions::toPCL(cloud_message, pcl_point_cloud_2);
+  std::cout << "4\n";
+  pcl::io::savePCDFile("pc2.pcd", pcl_point_cloud_2);
+
+  // std::cout << "fields in conversion:\n";
+  std::cout << "pcl_point_cloud_2: " << /* pcl_point_cloud_2 << */ std::endl;
+
+  std::cout << "fields[]" << std::endl;
+  for (size_t i = 0; i < pcl_point_cloud_2.fields.size (); ++i)
+  {
+    // if (pcl_point_cloud_2.fields[i].name == "semantics_rgb") {
+    //   pcl_point_cloud_2.fields[i].datatype = 6;
+    // }
+    std::cout << "  fields[" << i << "]: ";
+    std::cout << std::endl;
+    std::cout << "    " << pcl_point_cloud_2.fields[i].name << " --> " << std::to_string(pcl_point_cloud_2.fields[i].datatype) << std::endl;
+  }
+  std::cout << "data[]" << std::endl;
+  for (size_t i = 0; i < 100 /* pcl_point_cloud_2.data.size() */; ++i)
+  {
+    std::cout << "  data[" << i << "]: ";
+    std::cout << "  " << std::to_string(pcl_point_cloud_2.data[i]) << std::endl;
+  }
+  // for (auto& f : pcl_point_cloud_2.fields) {
+  //     std::cout << "f2: " <<  f.name << std::endl;
+  // }
+  // std::cout << "msg: " << std::endl;
+  // // for (int i = 0; i < converted->row_step * converted->height; ++i) {
+  // //   if (converted->row_step * converted->height > 22) {
+  // for (int i = 0; i < 80; ++i) {
+  //       std::cout << std::to_string(pcl_point_cloud_2.data[i]) << " ";
+  // }
+    // }
+  // std::cout << pcl_point_cloud_2;
+  // std::cout << std::endl;
   pcl::fromPCLPointCloud2(pcl_point_cloud_2, *converted);
+  uint32_t point_semantics_rgb = *reinterpret_cast<int*>(&(*converted)[0].semantics_rgb);
+  uint32_t centroid_r = (point_semantics_rgb >> 16) & 0xff;
+  uint32_t centroid_g = (point_semantics_rgb >> 8) & 0xff;
+  uint32_t centroid_b = point_semantics_rgb & 0xff;
+  std::cout << "First point converted: " << std::to_string(centroid_r) << ", "
+            << std::to_string(centroid_g) << ", " << std::to_string(centroid_b) << ", " << std::endl;
+  std::cout << *converted << std::endl;
 }
 
 template<typename PointCloudT>
@@ -216,15 +270,42 @@ static void convert_to_point_cloud_2_msg(const PointCloudT& cloud,
 
   // std::string red = "\033[0;31m";
   // std::string reset = "\033[0m";
-  // std::cout << "Showing memcpy contents of PointCloud<PclPoint> (len: " << cloud.size() << "):" << std::endl;
-  if (cloud.size() > 0) {
-      uint8_t cloud_data[sizeof(cloud.points[0])];
-      memcpy(cloud_data, &cloud.points[0], sizeof(cloud.points[0]));
-  }
+//   std::cout << "Showing cloud contents (len: " << cloud.size() << "): " << std::endl;
+//   for (int i = 0; i < cloud.size(); ++i) {
+//     // std::cout << std::to_string(cloud.points[i].rgb) << " ";
+//     std::cout << std::to_string(cloud.points[i].r) << ", " << std::to_string(cloud.points[i].g) << ", " << std::to_string(cloud.points[i].b) << " || ";
+//   }
+//   std::cout << std::endl;
+
+//   std::cout << "Showing pcl_point_cloud_2 contents " << std::endl;
+//   for (int i = 0; i < pcl_point_cloud_2.row_step * pcl_point_cloud_2.height; ++i) {
+//     std::cout << std::to_string(pcl_point_cloud_2.data[i]) << " ";
+//   }
+//   std::cout << std::endl;
+
+//   if (cloud.size() > 0) {
+//       uint8_t cloud_data[sizeof(cloud.points[0])];
+//       std::cout << "sizeof(cloud.points[0]): " << std::to_string(sizeof(cloud.points[0]));
+//       memcpy(&cloud_data[0], &cloud.points[0], sizeof(cloud.points[0]));
+
+//       for (int i = 0; i < sizeof(cloud.points[0]); ++i) {
+//         std::cout << std::to_string(cloud_data[i]) << " ";
+//       }
+//   }
+//   std::cout << std::endl;
+
+
   // Convert to sensor_msgs::PointCloud2.
   pcl_conversions::fromPCL(pcl_point_cloud_2, *converted);
   // Apply frame to msg.
   converted->header.frame_id = frame;
+
+//   std::cout << "msg fields: " << std::endl;
+//   for (int i = 0; i < 7/* converted->fields.count */; ++i) {
+//         std::cout << converted->fields[i].name << " ";
+//   }
+//   std::cout << std::endl;
+
 }
 
 static void applyCylindricalFilter(const PclPoint& center, double radius_m,
